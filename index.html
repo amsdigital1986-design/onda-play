@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONDA PLAY — Sua frequência</title>
+<style>
+:root{color-scheme:dark;--bg:#090e1b;--panel:#141e32;--accent:#47d7ca;--muted:#a8b6c9}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#111b32,#090e1b 55%);color:white;font:16px system-ui,Arial,sans-serif;padding-bottom:125px}header{padding:25px 20px 12px;display:flex;justify-content:space-between;align-items:center}.logo{font-size:25px;font-weight:900;letter-spacing:1px}.logo span{color:var(--accent)}.tag{color:var(--muted);font-size:12px}main{max-width:850px;margin:auto;padding:0 18px}.hero{background:linear-gradient(120deg,#12535c,#24355e);padding:24px;border-radius:20px;margin:15px 0 24px}.hero h1{font-size:28px;margin:8px 0}.hero p{color:#d2e7ed;margin:0}.search{width:100%;border:1px solid #33445b;background:#172238;border-radius:13px;padding:15px;color:white;font-size:16px}h2{font-size:20px;margin-top:28px}.playlists{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.playlist{background:var(--panel);border:1px solid #293950;border-radius:14px;padding:15px 8px;text-align:center;color:white;cursor:pointer}.playlist.active{border-color:var(--accent)}.playlist .emoji{font-size:29px;display:block;margin-bottom:8px}.playlist small{color:var(--muted)}.track{display:flex;align-items:center;gap:12px;background:var(--panel);padding:12px;border-radius:13px;margin:9px 0;cursor:pointer;border:1px solid transparent}.track.active{border-color:var(--accent)}.cover{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(130deg,#205d6b,#374279);font-size:22px}.track .info{flex:1;min-width:0}.track strong{display:block}.track small{color:var(--muted)}.track button{border:0;background:none;color:var(--accent);font-size:24px;cursor:pointer}.player{position:fixed;bottom:0;left:0;right:0;background:#18243a;border-top:1px solid #3b5264;padding:12px 16px 18px;z-index:10}.player-inner{max-width:850px;margin:auto}.player-top{display:flex;align-items:center;gap:12px}.player-name{flex:1;min-width:0}.player-name strong{display:block}.player-name small{color:var(--muted)}.controls{display:flex;align-items:center;gap:12px}.controls button{border:0;background:transparent;color:white;font-size:23px;cursor:pointer}.controls .primary{background:var(--accent);color:#062128;width:43px;height:43px;border-radius:50%}input[type=range]{width:100%;accent-color:var(--accent);margin-top:12px}footer{color:var(--muted);text-align:center;font-size:12px;margin:28px 0}@media(max-width:390px){.playlists{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div class="logo">◉ ONDA <span>PLAY</span></div><div class="tag">Sua frequência, seu espaço</div></header>
+<main><section class="hero"><div>♫ EXPERIÊNCIA ORIGINAL</div><h1>Encontre sua próxima onda.</h1><p>Explore paisagens sonoras demonstrativas, feitas para este protótipo.</p></section>
+<input class="search" id="search" type="search" placeholder="Buscar faixas ou artistas..." aria-label="Buscar músicas">
+<h2>Suas playlists</h2><div class="playlists" id="playlists"></div>
+<h2 id="listTitle">Todas as faixas</h2><div id="tracks"></div><footer>ONDA PLAY • Protótipo independente • Áudio sintetizado original</footer></main>
+<div class="player"><div class="player-inner"><div class="player-top"><div class="cover">♫</div><div class="player-name"><strong id="currentTitle">Selecione uma faixa</strong><small id="currentArtist">ONDA PLAY</small></div><div class="controls"><button id="prev" aria-label="Anterior">⏮</button><button id="toggle" class="primary" aria-label="Reproduzir">▶</button><button id="next" aria-label="Próxima">⏭</button></div></div><input id="progress" type="range" min="0" max="100" value="0" aria-label="Progresso"></div></div>
+<script>
+// Todas as melodias são sequências demonstrativas criadas para este projeto.
+const songs=[
+{title:'Horizonte Azul',artist:'Estúdio ONDA',list:'Relaxar',emoji:'🌊',notes:[261.63,329.63,392,329.63,293.66,261.63,220,261.63]},
+{title:'Luzes da Cidade',artist:'Estúdio ONDA',list:'Energia',emoji:'🌃',notes:[392,440,523.25,587.33,523.25,440,392,329.63]},
+{title:'Café da Manhã',artist:'Estúdio ONDA',list:'Foco',emoji:'☕',notes:[329.63,392,440,392,349.23,329.63,293.66,261.63]},
+{title:'Maré Serena',artist:'Estúdio ONDA',list:'Relaxar',emoji:'🌴',notes:[220,261.63,293.66,349.23,293.66,261.63,220,196]},
+{title:'Pulso Neon',artist:'Estúdio ONDA',list:'Energia',emoji:'⚡',notes:[440,440,523.25,659.25,587.33,523.25,440,392]},
+{title:'Ponto de Partida',artist:'Estúdio ONDA',list:'Foco',emoji:'✨',notes:[261.63,293.66,329.63,392,329.63,293.66,261.63,329.63]}
+];
+let selected='Todas',index=0,playing=false,ctx=null,osc=null,gain=null,step=0,timer=null;
+const $=id=>document.getElementById(id);
+function filtered(){const q=$('search').value.toLocaleLowerCase('pt-BR');return songs.map((s,i)=>({...s,i})).filter(s=>(selected==='Todas'||s.list===selected)&&(s.title+' '+s.artist).toLocaleLowerCase('pt-BR').includes(q))}
+function render(){const lists=[['Todas','🎧'],['Relaxar','🌊'],['Energia','⚡'],['Foco','🎯']];$('playlists').innerHTML=lists.map(([name,emoji])=>`<button class="playlist ${selected===name?'active':''}" data-list="${name}"><span class="emoji">${emoji}</span>${name}<br><small>Ouvir agora</small></button>`).join('');$('listTitle').textContent=selected==='Todas'?'Todas as faixas':`Playlist: ${selected}`;const f=filtered();$('tracks').innerHTML=f.length?f.map(s=>`<div class="track ${s.i===index?'active':''}" data-index="${s.i}" role="button" tabindex="0"><div class="cover">${s.emoji}</div><div class="info"><strong>${s.title}</strong><small>${s.artist} · ${s.list}</small></div><button aria-label="Ouvir ${s.title}">▶</button></div>`).join(''):'<p>Nenhuma faixa encontrada.</p>'}
+function stopTone(){if(osc){try{osc.stop()}catch(e){}osc.disconnect();osc=null}if(gain){gain.disconnect();gain=null}}
+function playNote(){if(!playing)return;stopTone();const s=songs[index];const freq=s.notes[step%s.notes.length];osc=ctx.createOscillator();gain=ctx.createGain();osc.type='sine';osc.frequency.value=freq;gain.gain.setValueAtTime(0.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.09,ctx.currentTime+0.04);gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.36);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+0.39);step++;$('progress').value=(step%s.notes.length)/s.notes.length*100}
+async function start(){try{if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();playing=true;$('toggle').textContent='⏸';clearInterval(timer);playNote();timer=setInterval(playNote,420)}catch(e){playing=false;alert('Seu navegador não conseguiu iniciar o áudio. Tente abrir a página no Chrome.')}}
+function pause(){playing=false;clearInterval(timer);stopTone();$('toggle').textContent='▶'}
+function select(i){pause();index=i;step=0;$('progress').value=0;$('currentTitle').textContent=songs[index].title;$('currentArtist').textContent=songs[index].artist;render();start()}
+$('toggle').onclick=()=>playing?pause():start();$('next').onclick=()=>select((index+1)%songs.length);$('prev').onclick=()=>select((index+songs.length-1)%songs.length);
+$('search').oninput=render;$('playlists').onclick=e=>{const b=e.target.closest('[data-list]');if(b){selected=b.dataset.list;render()}};
+$('tracks').onclick=e=>{const el=e.target.closest('[data-index]');if(el)select(Number(el.dataset.index))};$('tracks').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){const el=e.target.closest('[data-index]');if(el){e.preventDefault();select(Number(el.dataset.index))}}};
+$('progress').oninput=e=>{step=Math.floor(Number(e.target.value)/100*songs[index].notes.length);if(playing)playNote()};render();
+</script>
+</body>
+</html>
